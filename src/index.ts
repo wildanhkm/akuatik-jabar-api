@@ -2,6 +2,9 @@ import express, { Express, Response } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import { errorHandler } from './middlewares/error';
+
+import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 
 dotenv.config();
@@ -13,11 +16,12 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
+app.use(errorHandler);
 
 // Routes
-app.use('/api/users', userRoutes);
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/users', userRoutes);
 // TODO: add more routes for events and starting list
-// TODO: add more routes for authentication (login and reg)
 // TODO: add more routes for invoices and invoices should use distribute locking mechanism
 // TODO: add more routes to integrate with KONI?
 

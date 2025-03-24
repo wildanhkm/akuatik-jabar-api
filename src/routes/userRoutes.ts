@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+  bulkImportUsers,
   createUser,
   deleteUser,
   getAllUsers,
@@ -10,6 +11,7 @@ import {
 const router = Router();
 
 router.post('/', createUser);
+router.post('/bulk-import', bulkImportUsers);
 router.get('/', getAllUsers);
 router.get('/:id', getUserById);
 router.put('/:id', updateUser);
