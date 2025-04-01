@@ -28,12 +28,14 @@ export const createUser = async (req: Request, res: Response) => {
       return apiError(res, 400, 'Name, email, password, and role are required!');
     }
 
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+
     const user = await prisma.user.create({
       data: {
         username,
         email,
         role,
-        password,
+        password: hashedPassword,
       },
     });
 
@@ -44,7 +46,7 @@ export const createUser = async (req: Request, res: Response) => {
       data: user,
     });
   } catch (error: unknown) {
-    console.error('Error creating user:', error);
+    console.error(error as string);
 
     // Handle unique constraint violation
     // if (error.code === 'P2002') {
@@ -79,7 +81,8 @@ export const getAllUsers = async (req: Request, res: Response) => {
       message: 'Users retrieved successfully',
     });
   } catch (error) {
-    console.error('Error fetching users:', error);
+    console.error(error as string);
+
     return apiError(res, 500, 'Failed to fetch users');
   }
 };
@@ -103,7 +106,8 @@ export const getUserById = async (req: Request, res: Response) => {
       message: 'User retrieved successfully',
     });
   } catch (error) {
-    console.error('Error fetching user:', error);
+    console.error(error as string);
+
     return apiError(res, 500, 'Failed to fetch user');
   }
 };
@@ -134,7 +138,7 @@ export const updateUser = async (req: Request, res: Response) => {
       message: 'User updated successfully',
     });
   } catch (error) {
-    console.error('Error updating user:', error);
+    console.error(error as string);
 
     // Handle not found error
     // if (error.code === 'P2025') {
@@ -165,7 +169,7 @@ export const deleteUser = async (req: Request, res: Response) => {
       message: 'User deleted successfully',
     });
   } catch (error) {
-    console.error('Error deleting user:', error);
+    console.error(error as string);
 
     // Handle not found error
     // if (error.code === 'P2025') {
@@ -194,6 +198,20 @@ export const bulkImportUsers = [
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
       const usersData: ExcelUser[] = xlsx.utils.sheet_to_json(worksheet);
+      const usersDataWithPassword = usersData.map(async (user) => {
+        if (!user.password) {
+          return apiError(res, 400, 'Row(s) detected without password!');
+        }
+
+        return await prisma.user.create({
+          data: {
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            password: await bcrypt.hash(user.password, SALT_ROUNDS),
+          },
+        });
+      });
 
       // Delete the temp file after reading
       fs.unlinkSync(req.file.path);
@@ -202,13 +220,20 @@ export const bulkImportUsers = [
         return apiError(res, 400, 'No data found in the Excel file');
       }
 
+      return apiResponse({
+        res,
+        code: 201,
+        message: 'All user created successfully',
+        data: usersDataWithPassword,
+      });
       // ... rest of your bulk import logic
     } catch (error: unknown) {
       // Clean up file if error occurs
       if (req.file?.path && fs.existsSync(req.file.path)) {
         fs.unlinkSync(req.file.path);
       }
-      console.error('Bulk import error:', error);
+      console.error(error as string);
+
       return handleUserError(error, res);
     }
   },

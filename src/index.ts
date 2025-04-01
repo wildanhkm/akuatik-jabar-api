@@ -3,9 +3,7 @@ import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { errorHandler } from './middlewares/error';
-
-import authRoutes from './routes/authRoutes';
-import userRoutes from './routes/userRoutes';
+import { authRoutes, eventRoutes, userRoutes } from './routes';
 
 dotenv.config();
 
@@ -21,6 +19,7 @@ app.use(errorHandler);
 // Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/events', eventRoutes);
 // TODO: add more routes for events and starting list
 // TODO: add more routes for invoices and invoices should use distribute locking mechanism
 // TODO: add more routes to integrate with KONI?
