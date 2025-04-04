@@ -1,6 +1,3 @@
-// This is your Prisma schema file
-// Learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,217 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id                Int       @id @default(autoincrement())
-  email             String    @unique
-  username          String    @unique
-  password          String
-  role              UserRole  @default(club)
-  isActive          Boolean   @default(true) @map("is_active")
-  lastLogin         DateTime? @map("last_login")
-  passwordResetToken String?  @map("password_reset_token")
-  passwordResetExpires DateTime? @map("password_reset_expires")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at")
-  
-  // Relations
-  club              Club?
-  official          Official?
-
-  @@map("users")
-}
-
-model Club {
-  id            Int      @id @default(autoincrement())
-  userId        Int      @unique @map("user_id")
-  name          String
-  phone         String?
-  email         String?
-  address       String?  @db.Text
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
-  
-  // Relations
-  user                 User                @relation(fields: [userId], references: [id])
-  members              ClubMember[]
-  eventRegistrations   EventRegistration[]
-  invoices             Invoice[]
-
-  @@map("clubs")
-}
-
-model Official {
-  id            Int      @id @default(autoincrement())
-  userId        Int      @unique @map("user_id")
-  name          String
-  position      String?
-  phone         String?
-  email         String?
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
-  
-  // Relations
-  user          User     @relation(fields: [userId], references: [id])
-  events        EventOfficial[]
-
-  @@map("officials")
-}
-
-model ClubMember {
-  id               Int       @id @default(autoincrement())
-  clubId           Int       @map("club_id")
-  name             String
-  role             String?
-  email            String?
-  phone            String?
-  dateOfBirth      DateTime? @map("date_of_birth") @db.Date
-  emergencyContact String?   @map("emergency_contact")
-  active           Boolean   @default(true)
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at")
-  
-  // Relations
-  club                     Club                      @relation(fields: [clubId], references: [id])
-  startingListParticipant  StartingListParticipant[]
-  invoiceItems             InvoiceItem[]
-
-  @@map("club_members")
-}
-
-model Event {
-  id                   Int       @id @default(autoincrement())
-  name                 String
-  description          String?   @db.Text
-  location             String?
-  startDate            DateTime  @map("start_date") @db.Date
-  endDate              DateTime  @map("end_date") @db.Date
-  registrationDeadline DateTime? @map("registration_deadline") @db.Date
-  status               EventStatus @default(draft)
-  maxParticipants      Int?      @map("max_participants")
-  createdAt            DateTime  @default(now()) @map("created_at")
-  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at")
-  
-  // Relations
-  eventRegistrations   EventRegistration[]
-  startingLists        StartingList[]
-  invoices             Invoice[]
-  officials            EventOfficial[]
-
-  @@map("events")
-}
-
-model EventOfficial {
-  id          Int      @id @default(autoincrement())
-  eventId     Int      @map("event_id")
-  officialId  Int      @map("official_id")
-  role        String
-  createdAt   DateTime @default(now()) @map("created_at")
-  
-  // Relations
-  event      Event     @relation(fields: [eventId], references: [id])
-  official   Official  @relation(fields: [officialId], references: [id])
-
-  @@map("event_officials")
-}
-
-model EventRegistration {
-  id               Int      @id @default(autoincrement())
-  eventId          Int      @map("event_id")
-  clubId           Int      @map("club_id")
-  registrationDate DateTime @default(now()) @map("registration_date")
-  status           RegistrationStatus @default(pending)
-  notes            String?  @db.Text
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at")
-  
-  // Relations
-  event  Event  @relation(fields: [eventId], references: [id])
-  club   Club   @relation(fields: [clubId], references: [id])
-
-  @@map("event_registrations")
-}
-
-model StartingList {
-  id               Int      @id @default(autoincrement())
-  eventId          Int      @map("event_id")
-  category         String
-  ageGroup         String?  @map("age_group")
-  gender           Gender?
-  maxParticipants  Int?     @map("max_participants")
-  startTime        DateTime? @map("start_time")
-  status           StartingListStatus @default(scheduled)
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at")
-  
-  // Relations
-  event                   Event                     @relation(fields: [eventId], references: [id])
-  participants            StartingListParticipant[]
-  invoiceItems            InvoiceItem[]
-
-  @@map("starting_lists")
-}
-
-model StartingListParticipant {
-  id              Int       @id @default(autoincrement())
-  startingListId  Int       @map("starting_list_id")
-  memberId        Int       @map("member_id")
-  laneNumber      Int?      @map("lane_number")
-  seedTime        DateTime? @map("seed_time") @db.Time
-  finalTime       DateTime? @map("final_time") @db.Time
-  position        Int?
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
-  
-  // Relations
-  startingList  StartingList  @relation(fields: [startingListId], references: [id])
-  member        ClubMember    @relation(fields: [memberId], references: [id])
-
-  @@map("starting_list_participants")
-}
-
-model Invoice {
-  id              Int      @id @default(autoincrement())
-  clubId          Int      @map("club_id")
-  eventId         Int      @map("event_id")
-  amount          Decimal  @db.Decimal(10, 2)
-  issueDate       DateTime @map("issue_date") @db.Date
-  dueDate         DateTime @map("due_date") @db.Date
-  status          InvoiceStatus @default(draft)
-  paymentDate     DateTime? @map("payment_date") @db.Date
-  paymentMethod   String?  @map("payment_method")
-  referenceNumber String?  @map("reference_number")
-  notes           String?  @db.Text
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
-  
-  // Relations
-  club          Club           @relation(fields: [clubId], references: [id])
-  event         Event          @relation(fields: [eventId], references: [id])
-  invoiceItems  InvoiceItem[]
-
-  @@map("invoices")
-}
-
-model InvoiceItem {
-  id              Int      @id @default(autoincrement())
-  invoiceId       Int      @map("invoice_id")
-  startingListId  Int      @map("starting_list_id")
-  memberId        Int      @map("member_id")
-  description     String
-  quantity        Int      @default(1)
-  unitPrice       Decimal  @map("unit_price") @db.Decimal(10, 2)
-  totalPrice      Decimal  @map("total_price") @db.Decimal(10, 2)
-  createdAt       DateTime @default(now()) @map("created_at")
-  
-  // Relations
-  invoice      Invoice       @relation(fields: [invoiceId], references: [id])
-  startingList StartingList  @relation(fields: [startingListId], references: [id])
-  member       ClubMember    @relation(fields: [memberId], references: [id])
-
-  @@map("invoice_items")
-}
-
-// Enums
 enum UserRole {
   club
   official
@@ -258,4 +44,182 @@ enum InvoiceStatus {
   paid
   canceled
   overdue
+}
+
+enum ClubMemberTypes {
+  achieving
+  non_achieving
+}
+
+// Models
+model User {
+  id                  Int       @id @default(autoincrement())
+  email               String    @unique
+  username            String    @unique
+  password            String
+  role                UserRole  @default(club)
+  is_active           Boolean   @default(true)
+  last_login          DateTime?
+  password_reset_token String?
+  password_reset_expires DateTime?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @default(now()) @updatedAt
+  clubs               Club[]
+  officials           Official[]
+}
+
+model Club {
+  id                  Int       @id @default(autoincrement())
+  user_id             Int       @unique
+  user                User      @relation(fields: [user_id], references: [id])
+  name                String
+  phone               String?
+  email               String?
+  address             String?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @default(now()) @updatedAt
+  deleted_at          DateTime? @map("deleted_at")
+  active              Boolean  @default(true)
+  members             ClubMember[]
+  event_registrations EventRegistration[]
+  invoices            Invoice[]
+  @@map("clubs")
+  @@index([deleted_at]) // Add index for better performance
+}
+
+model Official {
+  id                  Int       @id @default(autoincrement())
+  user_id             Int       @unique
+  user                User      @relation(fields: [user_id], references: [id])
+  name                String
+  position            String?
+  phone               String?
+  email               String?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @default(now()) @updatedAt
+  event_officials     EventOfficial[]
+}
+
+model ClubMember {
+  id                  Int       @id @default(autoincrement())
+  club_id             Int
+  club                Club      @relation(fields: [club_id], references: [id])
+  name                String
+  role                String?
+  email               String?
+  phone               String?
+  date_of_birth       DateTime?
+  emergency_contact   String?
+  category            ClubMemberTypes @default(non_achieving)
+  certificates        Json?
+  active              Boolean   @default(true)
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @default(now()) @updatedAt
+  starting_list_participants StartingListParticipant[]
+  invoice_items       InvoiceItem[]
+}
+
+model Event {
+  id                  Int       @id @default(autoincrement())
+  name                String
+  description         String?
+  location            String?
+  start_date          DateTime
+  end_date            DateTime
+  registration_deadline DateTime?
+  status              EventStatus @default(draft)
+  max_participants    Int?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @default(now()) @updatedAt
+  event_officials     EventOfficial[]
+  registrations       EventRegistration[]
+  starting_lists      StartingList[]
+  invoices            Invoice[]
+}
+
+model EventOfficial {
+  id                  Int       @id @default(autoincrement())
+  event_id            Int
+  event               Event     @relation(fields: [event_id], references: [id])
+  official_id         Int
+  official            Official  @relation(fields: [official_id], references: [id])
+  role                String
+  created_at          DateTime  @default(now())
+}
+
+model EventRegistration {
+  id                  Int       @id @default(autoincrement())
+  event_id            Int
+  event               Event     @relation(fields: [event_id], references: [id])
+  club_id             Int
+  club                Club      @relation(fields: [club_id], references: [id])
+  registration_date   DateTime  @default(now())
+  status              RegistrationStatus @default(pending)
+  notes               String?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @default(now()) @updatedAt
+}
+
+model StartingList {
+  id                  Int       @id @default(autoincrement())
+  event_id            Int
+  event               Event     @relation(fields: [event_id], references: [id])
+  category            String
+  age_group           String?
+  gender              Gender?
+  max_participants    Int?
+  start_time          DateTime?
+  status              StartingListStatus @default(scheduled)
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @default(now()) @updatedAt
+  participants        StartingListParticipant[]
+  invoice_items       InvoiceItem[]
+}
+
+model StartingListParticipant {
+  id                  Int       @id @default(autoincrement())
+  starting_list_id    Int
+  starting_list       StartingList @relation(fields: [starting_list_id], references: [id])
+  member_id           Int
+  member              ClubMember @relation(fields: [member_id], references: [id])
+  lane_number         Int?
+  seed_time           DateTime?
+  final_time          DateTime?
+  position            Int?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @default(now()) @updatedAt
+}
+
+model Invoice {
+  id                  Int       @id @default(autoincrement())
+  club_id             Int
+  club                Club      @relation(fields: [club_id], references: [id])
+  event_id            Int
+  event               Event     @relation(fields: [event_id], references: [id])
+  amount              Float     @default(0.00)
+  issue_date          DateTime
+  due_date            DateTime
+  status              InvoiceStatus @default(draft)
+  payment_date        DateTime?
+  payment_method      String?
+  reference_number    String?
+  notes               String?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @default(now()) @updatedAt
+  items               InvoiceItem[]
+}
+
+model InvoiceItem {
+  id                  Int       @id @default(autoincrement())
+  invoice_id          Int
+  invoice             Invoice   @relation(fields: [invoice_id], references: [id])
+  starting_list_id    Int
+  starting_list       StartingList @relation(fields: [starting_list_id], references: [id])
+  member_id           Int
+  member              ClubMember @relation(fields: [member_id], references: [id])
+  description         String
+  quantity            Int       @default(1)
+  unit_price          Float     @default(0.00)
+  total_price         Float     @default(0.00)
+  created_at          DateTime  @default(now())
 }
