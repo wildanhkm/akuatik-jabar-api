@@ -54,7 +54,7 @@ export const createEvent = async (req: Request, res: Response) => {
 
     // result.data is now properly typed as EventBody
     const createdEvent = await prisma.event.create({
-      data: result.data,
+      data: { ...result.data, start_date: result.data.startDate, end_date: result.data.endDate },
     });
 
     return apiResponse({

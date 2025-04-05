@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { validationResult } from 'express-validator';
+import { apiError, apiResponse } from '../utils/response';
 // import { emailValidator, phoneValidator } from '../validators'; // Your custom validators
 
 const prisma = new PrismaClient();
@@ -36,17 +37,16 @@ export const getClubs = async (req: Request, res: Response) => {
       prisma.club.count({ where: whereClause }),
     ]);
 
-    res.status(200).json({
-      data: clubs,
-      meta: {
-        total: totalCount,
-        page: pageNumber,
-        limit: limitNumber,
-        totalPages: Math.ceil(totalCount / limitNumber),
-      },
+    apiResponse({
+      res,
+      code: 200,
+      paginatedData: clubs,
+      total: totalCount,
+      page: pageNumber,
+      perPage: Number(limit),
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch clubs' });
+    apiError(res, 500, 'Failed to fetch clubs');
   }
 };
 
@@ -90,12 +90,12 @@ export const getClubById = async (req: Request, res: Response) => {
     });
 
     if (!club) {
-      return res.status(404).json({ error: 'Club not found' });
+      return apiError(res, 400, 'Club not found');
     }
 
-    res.status(200).json(club);
+    return apiResponse({ res, code: 200, data: club, message: 'Club fetched successfully' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch club' });
+    return apiError(res, 500, 'Failed to fetch club');
   }
 };
 
@@ -119,7 +119,7 @@ export const updateClubById = async (req: Request, res: Response) => {
     });
 
     if (existingClub) {
-      return res.status(400).json({ error: 'Email or phone already in use' });
+      return apiError(res, 400, 'Email or phone already in use');
     }
 
     const updatedClub = await prisma.club.update({
@@ -133,9 +133,9 @@ export const updateClubById = async (req: Request, res: Response) => {
       },
     });
 
-    res.status(200).json(updatedClub);
+    return apiResponse({ res, code: 200, data: updatedClub, message: 'Club updated successfully' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update club' });
+    return apiError(res, 500, 'Failed to update club');
   }
 };
 
@@ -153,7 +153,7 @@ export const deleteClub = async (req: Request, res: Response) => {
     });
 
     if (!club) {
-      return res.status(404).json({ error: 'Club not found or already deleted' });
+      return apiError(res, 404, 'Club not found or already deleted');
     }
 
     // Soft delete related records
@@ -179,8 +179,8 @@ export const deleteClub = async (req: Request, res: Response) => {
       }),
     ]);
 
-    res.status(204).end();
+    return apiResponse({ res, code: 204, message: 'Club updated successfully' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to delete club' });
+    return apiError(res, 500, 'Failed to delete club');
   }
 };
