@@ -37,7 +37,7 @@ export const getClubs = async (req: Request, res: Response) => {
       prisma.club.count({ where: whereClause }),
     ]);
 
-    apiResponse({
+    return apiResponse({
       res,
       code: 200,
       paginatedData: clubs,
@@ -46,7 +46,7 @@ export const getClubs = async (req: Request, res: Response) => {
       perPage: Number(limit),
     });
   } catch (error) {
-    apiError(res, 500, 'Failed to fetch clubs');
+    return apiError(res, 500, 'Failed to fetch clubs');
   }
 };
 

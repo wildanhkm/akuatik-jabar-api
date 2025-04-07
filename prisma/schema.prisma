@@ -204,6 +204,7 @@ model Invoice {
   payment_method      String?
   reference_number    String?
   notes               String?
+  deleted_at          DateTime? @map("deleted_at")
   created_at          DateTime  @default(now())
   updated_at          DateTime  @default(now()) @updatedAt
   items               InvoiceItem[]
