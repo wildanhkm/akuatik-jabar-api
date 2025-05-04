@@ -56,14 +56,14 @@ export const register = async (req: Request, res: Response) => {
     if (role === 'club') {
       await prisma.club.create({
         data: {
-          userId: user.id,
+          user_id: user.id,
           name: username, // Using username as default club name
         },
       });
     } else if (role === 'official') {
       await prisma.official.create({
         data: {
-          userId: user.id,
+          user_id: user.id,
           name: username, // Using username as default official name
         },
       });
@@ -104,7 +104,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // Check if user is active
-    if (!user.isActive) {
+    if (!user.is_active) {
       return apiError(res, 403, 'Account is deactivated');
     }
 
@@ -120,7 +120,7 @@ export const login = async (req: Request, res: Response) => {
     // Update last login
     await prisma.user.update({
       where: { id: user.id },
-      data: { lastLogin: new Date() },
+      data: { last_login: new Date() },
     });
 
     // Return user data (excluding password) and token

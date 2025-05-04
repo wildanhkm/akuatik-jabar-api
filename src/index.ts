@@ -3,7 +3,8 @@ import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { errorHandler } from './middlewares/error';
-import { authRoutes, eventRoutes, userRoutes } from './routes';
+import { authRoutes, eventRoutes, publicRoutes, userRoutes } from './routes';
+import { authenticateToken } from './middlewares/auth';
 
 dotenv.config();
 
@@ -13,13 +14,17 @@ const port = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 app.use(errorHandler);
 
-// Routes
-app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/users', userRoutes);
-app.use('/api/v1/events', eventRoutes);
+// Public Route
+app.use('/api/v1/public/kejurkab', publicRoutes);
+
+// Protected Routes
+app.use('/api/v1/auth', authenticateToken, authRoutes);
+app.use('/api/v1/users', authenticateToken, userRoutes);
+app.use('/api/v1/events', authenticateToken, eventRoutes);
 // TODO: add more routes for events and starting list
 // TODO: add more routes for invoices and invoices should use distribute locking mechanism
 // TODO: add more routes to integrate with KONI?

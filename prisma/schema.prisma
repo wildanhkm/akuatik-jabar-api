@@ -224,3 +224,26 @@ model InvoiceItem {
   total_price         Float     @default(0.00)
   created_at          DateTime  @default(now())
 }
+
+model publicKejurkab {
+  id                  Int       @id @default(autoincrement())
+  invoice_number      String    @unique @default(uuid()) // Changed to uuid for globally unique identifiers
+  registration_number String    @unique @default(uuid())
+  registrant_name     String
+  event_name          String
+  category            String
+  email               String    @unique
+  phone               String    @unique
+  invoice             publicInvoice?  @relation(fields: [invoice_number], references: [invoice_number])
+}
+
+model publicInvoice {
+  id             Int       @id @default(autoincrement())
+  invoice_number String    @unique @default(uuid())
+  billed_to      String
+  invoice_date   DateTime  @default(now())
+  status         String    @default("pending") // e.g., "pending", "paid", "cancelled"
+  created_at     DateTime  @default(now())
+  deleted_at     DateTime?
+  kejurkab       publicKejurkab?
+}
