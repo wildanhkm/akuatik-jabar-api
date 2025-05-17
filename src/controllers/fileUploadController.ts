@@ -1,15 +1,16 @@
-const express = require('express');
-const router = express.Router();
+import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { PrismaClient } from '@prisma/client';
+import { ClubMember, ClubMemberTypes, PrismaClient } from '@prisma/client';
+import { apiError, apiResponse } from '../utils/response';
+import { Request, Response } from 'express';
 
+const router = express.Router();
 const prisma = new PrismaClient();
-
 // Set up multer storage configuration
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: function (req, file, cb) {
     const uploadDir = process.env.UPLOAD_DIR || 'uploads';
     // Ensure upload directory exists
     if (!fs.existsSync(uploadDir)) {
@@ -17,14 +18,18 @@ const storage = multer.diskStorage({
     }
     cb(null, uploadDir);
   },
-  filename: (req, file, cb) => {
+  filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + path.extname(file.originalname));
   },
 });
 
 // File filter to accept only excel files
-const fileFilter = (req, file, cb) => {
+const fileFilter = (
+  req: express.Request,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback
+) => {
   const allowedFileTypes = [
     'application/vnd.ms-excel',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -34,7 +39,7 @@ const fileFilter = (req, file, cb) => {
   if (allowedFileTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Only Excel files are allowed!'), false);
+    cb(null, false);
   }
 };
 
@@ -189,7 +194,7 @@ async function processExcelFile(
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
-    return { success: false, error: error.message };
+    return { success: false, error };
   }
 }
 
@@ -199,11 +204,11 @@ async function processExcelFile(
  * @param {string} compeType - Competition type
  * @returns {object} - Formatted member data
  */
-function prepareClubMemberData(row, compeType) {
+function prepareClubMemberData(row: ClubMember, compeType: string) {
   // Parse date of birth, handling various formats
   let dateOfBirth = null;
-  if (row.date_of_birth || row.dob) {
-    const dobString = row.date_of_birth || row.dob;
+  if (row.date_of_birth) {
+    const dobString = row.date_of_birth;
     dateOfBirth = new Date(dobString);
 
     // Handle invalid dates
@@ -214,37 +219,28 @@ function prepareClubMemberData(row, compeType) {
 
   // Prepare member data
   const memberData = {
-    name: row.name || row.fullname || `${row.first_name || ''} ${row.last_name || ''}`.trim(),
+    name: row.name.trim(),
     date_of_birth: dateOfBirth,
     email: row.email || null,
-    phone: row.phone || row.phone_number || null,
+    phone: row.phone || null,
     emergency_contact: row.emergency_contact || null,
-    category: compeType === 'achieving' ? 'achieving' : 'non_achieving',
+    category: compeType === 'achieving' ? ClubMemberTypes.achieving : ClubMemberTypes.non_achieving,
     active: true,
   };
-
-  // Add additional certificates if available
-  if (row.certificates || row.license) {
-    memberData.certificates = JSON.stringify({
-      certificates: row.certificates || row.license,
-    });
-  }
 
   return memberData;
 }
 
 export const uploadExcel = async (req: Request, res: Response) => {
   try {
-    if (!req.body?.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+    if (!req.file) {
+      return apiError(res, 400, 'No file uploaded');
     }
 
     const { eventId, clubId, compeType } = req.body;
 
     if (!eventId || !clubId || !compeType) {
-      return res
-        .status(400)
-        .json({ error: 'Event ID, Club ID, and Competition type are required' });
+      return apiError(res, 400, 'Event ID, Club ID, and Competition type are required');
     }
 
     const filePath = req.file.path;
@@ -253,18 +249,12 @@ export const uploadExcel = async (req: Request, res: Response) => {
     const result = await processExcelFile(filePath, eventId, clubId, compeType);
 
     if (!result.success) {
-      return res.status(400).json({ error: result.error });
+      return apiError(res, 400, result.message!);
     }
 
-    return res.status(200).json({
-      message: result.message,
-      recordsProcessed: result.recordsProcessed,
-    });
+    return apiResponse({ res, code: 200, data: result.recordsProcessed, message: result.message });
   } catch (error) {
     console.error('Error processing file:', error);
-    return res.status(500).json({
-      error: 'Failed to process file',
-      details: error.message,
-    });
+    return apiError(res, 400, error as string);
   }
 };
