@@ -69,14 +69,13 @@ export const register = async (req: Request, res: Response) => {
       });
     }
 
-    // Generate JWT token
-    const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
-
     // Return user data (excluding password) and token
     const { password: _, ...userData } = user;
     return apiResponse({
       res,
-      data: { user: userData, token },
+      data: { user: userData },
+      code: 200,
+      message: 'User successfully registered!',
     });
   } catch (error) {
     return apiError(res, 500, 'Internal server error', error);
@@ -89,7 +88,7 @@ export const login = async (req: Request, res: Response) => {
 
     // Validate input
     if (!emailOrUsername || !password) {
-      return apiError(res, 400, 'Email/username and password are required');
+      return apiError(res, 400, 'Email/username and password are required!');
     }
 
     // Find user by email or username
@@ -100,7 +99,7 @@ export const login = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return apiError(res, 401, 'Email is not found!');
+      return apiError(res, 401, 'Account is not found!');
     }
 
     // Check if user is active
@@ -115,7 +114,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // Generate JWT token
-    const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
+    const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '2h' });
 
     // Update last login
     await prisma.user.update({

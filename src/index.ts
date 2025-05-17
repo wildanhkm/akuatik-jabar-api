@@ -22,9 +22,10 @@ app.use(errorHandler);
 app.use('/api/v1/public/kejurkab', publicRoutes);
 
 // Protected Routes
-app.use('/api/v1/auth', authenticateToken, authRoutes);
+app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', authenticateToken, userRoutes);
 app.use('/api/v1/events', authenticateToken, eventRoutes);
+app.use('/api/v1/file-upload', authenticateToken, eventRoutes);
 // TODO: add more routes for events and starting list
 // TODO: add more routes for invoices and invoices should use distribute locking mechanism
 // TODO: add more routes to integrate with KONI?
